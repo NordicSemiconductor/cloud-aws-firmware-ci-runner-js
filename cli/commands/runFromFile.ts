@@ -1,5 +1,5 @@
 import { CommandDefinition } from './CommandDefinition'
-import { atHostHexfile } from '@bifravst/firmware-ci'
+import { atHostHexfile } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { runJob } from '../../runner/runJob'
 import { promises as fs } from 'fs'
 import { download } from '../../runner/download'

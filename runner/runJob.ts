@@ -3,7 +3,7 @@ import {
 	connect,
 	Connection,
 	flashCredentials,
-} from '@bifravst/firmware-ci'
+} from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { RunningFirmwareCIJobDocument } from '../job/job'
 import { allSeen } from './allSeen'
 import { progress, warn, log } from './log'
