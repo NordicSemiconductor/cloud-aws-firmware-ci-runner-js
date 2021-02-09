@@ -60,4 +60,28 @@ describe('allSeen', () => {
 			expect(abortOn('MQTT_EVT_SUBACK')).toEqual(true)
 		})
 	})
+	describe('multiple matches per line', () => {
+		const l = `"appV": "134387f674ba67e13c986f4f46c09f6f959d996e-nrf9160dk_nrf9160ns-ltem-4de5e5e5-403e-480b-b6dd-2320387b44f4-upgraded"`
+
+		it('should support multiple matches per line', () => {
+			const abortOn = allSeen([
+				'appV',
+				`134387f674ba67e13c986f4f46c09f6f959d996e-nrf9160dk_nrf9160ns-ltem-4de5e5e5-403e-480b-b6dd-2320387b44f4-upgraded`,
+				`cloud_module.data_send: Data sent`,
+			])
+			expect(abortOn(l)).toEqual(false)
+			expect(abortOn(l)).toEqual(false)
+			expect(abortOn(`cloud_module.data_send: Data sent`)).toEqual(true)
+		})
+		it('should honor the order', () => {
+			const abortOn = allSeen([
+				`134387f674ba67e13c986f4f46c09f6f959d996e-nrf9160dk_nrf9160ns-ltem-4de5e5e5-403e-480b-b6dd-2320387b44f4-upgraded`,
+				'appV',
+				`cloud_module.data_send: Data sent`,
+			])
+			expect(abortOn(l)).toEqual(false)
+			expect(abortOn(l)).toEqual(false)
+			expect(abortOn(`cloud_module.data_send: Data sent`)).toEqual(false)
+		})
+	})
 })

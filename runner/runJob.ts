@@ -77,7 +77,7 @@ export const runJob = async ({
 			onData(async (data) => {
 				s?.forEach(async (s) => {
 					if (data.includes(s)) {
-						warn(doc.id, `<${type}>`, 'Termination criteria seen:', data)
+						warn(doc.id, `<${type}>`, 'Termination criteria seen:', s)
 					}
 				})
 				if (terminateCheck(data)) {
