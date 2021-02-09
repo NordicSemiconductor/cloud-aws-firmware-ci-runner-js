@@ -1,10 +1,9 @@
 pull_request_rules:
   - name: Automatic merge security PRs when all status checks pass
     conditions:
-      - author~=^(snyk-bot|dependabot\[bot\])$
+      - author~=^(snyk-bot|dependabot\[bot\]|renovate\[bot\])$
       - status-success=security/snyk (Asset Tracker Cloud)
-      - status-success=tests (ubuntu-latest)
-      - status-success=tests (macos-latest)
+      - status-success=tests
     actions:
       merge:
         method: rebase
