@@ -12,4 +12,4 @@
 Exposes real nRF9160 hardware to be used for end-to-end tests. Runs on AWS.
 
 > :information_source:
-> [Read the complete Asset Tracker Cloud Example documentation](https://nordicsemiconductor.github.io/asset-tracker-cloud-docs/).
+> [Read the complete nRF Asset Tracker documentation](https://nordicsemiconductor.github.io/asset-tracker-cloud-docs/).
