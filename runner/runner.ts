@@ -17,10 +17,17 @@ export const runner = async ({
 	certificateJSON,
 	atHostHexfile,
 	device,
+	powerCycle,
 }: {
 	certificateJSON: string
 	atHostHexfile: string
 	device: string
+	powerCycle?: {
+		offCmd: string
+		onCmd: string
+		waitSeconds: number
+		waitSecondsAfterOn: number
+	}
 }): Promise<void> => {
 	const {
 		clientId,
@@ -93,6 +100,7 @@ export const runner = async ({
 								hexfile,
 								device,
 								atHostHexfile,
+								powerCycle,
 							})
 							const { result, deviceLog, flashLog } = run
 							connection = run.connection

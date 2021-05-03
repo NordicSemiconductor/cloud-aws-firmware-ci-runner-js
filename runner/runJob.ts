@@ -7,6 +7,7 @@ import {
 import { RunningFirmwareCIJobDocument } from '../job/job'
 import { allSeen } from './allSeen'
 import { progress, warn, log } from './log'
+import { runCmd } from './runCmd'
 
 type Result = { timeout: boolean; abort: boolean }
 
@@ -15,17 +16,43 @@ export const runJob = async ({
 	hexfile,
 	atHostHexfile,
 	device,
+	powerCycle,
 }: {
 	doc: RunningFirmwareCIJobDocument
 	hexfile: string
 	atHostHexfile: string
 	device: string
+	powerCycle?: {
+		offCmd: string
+		onCmd: string
+		waitSeconds: number
+		waitSecondsAfterOn: number
+	}
 }): Promise<{
 	result: Result
 	connection: Connection
 	deviceLog: string[]
 	flashLog: string[]
 }> => {
+	if (powerCycle !== undefined) {
+		progress(doc.id, `Power cycling device`)
+		progress(doc.id, `Turning off ...`)
+		progress(doc.id, powerCycle.offCmd)
+		await runCmd({ cmd: powerCycle.offCmd })
+		progress(doc.id, `Waiting ${powerCycle.waitSeconds} seconds ...`)
+		await new Promise((resolve) =>
+			setTimeout(resolve, powerCycle.waitSeconds * 1000),
+		)
+		progress(doc.id, `Turning on ...`)
+		progress(doc.id, powerCycle.onCmd)
+		await runCmd({ cmd: powerCycle.onCmd })
+
+		progress(doc.id, `Waiting ${powerCycle.waitSecondsAfterOn} seconds ...`)
+		await new Promise((resolve) =>
+			setTimeout(resolve, powerCycle.waitSecondsAfterOn * 1000),
+		)
+	}
+
 	progress(doc.id, `Connecting to ${device}`)
 	const { connection, deviceLog, onData } = await connect({
 		device: device,
