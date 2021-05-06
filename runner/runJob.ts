@@ -17,6 +17,7 @@ export const runJob = async ({
 	atHostHexfile,
 	device,
 	powerCycle,
+	endOnWaitSeconds,
 }: {
 	doc: RunningFirmwareCIJobDocument
 	hexfile: string
@@ -28,6 +29,7 @@ export const runJob = async ({
 		waitSeconds: number
 		waitSecondsAfterOn: number
 	}
+	endOnWaitSeconds?: number
 }): Promise<{
 	result: Result
 	connection: Connection
@@ -107,7 +109,11 @@ export const runJob = async ({
 					...log('Flash Firmware'),
 				})
 
-				const terminateOn = (type: string, result: Result, s: string[]) => {
+				const terminateOn = (
+					type: 'abortOn' | 'endOn',
+					result: Result,
+					s: string[],
+				) => {
 					progress(
 						doc.id,
 						`<${type}>`,
@@ -130,6 +136,10 @@ export const runJob = async ({
 									'All termination criteria have been seen.',
 								)
 								clearTimeout(jobTimeout)
+								if (type === 'endOn')
+									await new Promise((resolve) =>
+										setTimeout(resolve, (endOnWaitSeconds ?? 60) * 1000),
+									)
 								await connection.end()
 								resolve({
 									result,
