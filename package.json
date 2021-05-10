@@ -5,7 +5,7 @@
   "main": "./dist/export.js",
   "bin": "./cli/index.js",
   "scripts": {
-    "test": "jest",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node --unhandled-rejections=strict dist/runner/runner.js",
     "postinstall": "husky install",
     "prepublishOnly": "pinst --disable",
@@ -48,7 +48,6 @@
     "@nordicsemiconductor/asset-tracker-cloud-code-style": "9.0.2",
     "@nordicsemiconductor/eslint-config-asset-tracker-cloud-typescript": "7.0.19",
     "@types/aws-iot-device-sdk": "2.2.2",
-    "@types/jest": "26.0.23",
     "@types/node": "15.0.2",
     "@types/node-fetch": "2.5.10",
     "@types/serialport": "8.0.1",
@@ -57,11 +56,9 @@
     "chalk": "4.1.1",
     "eslint": "7.26.0",
     "husky": "6.0.0",
-    "jest": "26.6.3",
     "lint-staged": "11.0.0",
     "pinst": "2.1.6",
     "prettier": "2.3.0",
-    "ts-jest": "26.5.6",
     "typescript": "4.2.4"
   },
   "lint-staged": {
@@ -96,23 +93,5 @@
     "cli/index.js",
     "LICENSE",
     "README.md"
-  ],
-  "jest": {
-    "testURL": "http://localhost",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "json"
-    ],
-    "transform": {
-      ".+\\.tsx?$": "ts-jest"
-    },
-    "testRegex": ".+\\.spec\\.ts$",
-    "globals": {
-      "ts-jest": {
-        "diagnostics": true
-      }
-    }
-  }
+  ]
 }
