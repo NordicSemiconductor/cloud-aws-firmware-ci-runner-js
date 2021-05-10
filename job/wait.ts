@@ -5,7 +5,11 @@ import {
 	IoTClient,
 	Job,
 } from '@aws-sdk/client-iot'
-import { progress, success, warn } from '../runner/log'
+import {
+	progress,
+	success,
+	warn,
+} from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { FirmwareCIJobDocument } from './job'
 
 export const waitDefaultTimeoutInMinutes = 5

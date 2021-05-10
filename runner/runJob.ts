@@ -3,11 +3,13 @@ import {
 	connect,
 	Connection,
 	flashCredentials,
+	allSeen,
+	progress,
+	warn,
+	log,
+	runCmd,
 } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { RunningFirmwareCIJobDocument } from '../job/job'
-import { allSeen } from './allSeen'
-import { progress, warn, log } from './log'
-import { runCmd } from './runCmd'
 
 type Result = { timeout: boolean; abort: boolean }
 

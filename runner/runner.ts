@@ -1,8 +1,12 @@
 import * as chalk from 'chalk'
 import { jobs, job } from 'aws-iot-device-sdk'
-import { progress, success, warn } from './log'
 import { promises as fs } from 'fs'
-import { download } from './download'
+import {
+	download,
+	progress,
+	success,
+	warn,
+} from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { runJob } from './runJob'
 import {
 	defaultTimeoutInMinutes,
@@ -29,13 +33,8 @@ export const runner = async ({
 		waitSecondsAfterOn: number
 	}
 }): Promise<void> => {
-	const {
-		clientId,
-		brokerHostname,
-		caCert,
-		clientCert,
-		privateKey,
-	} = JSON.parse(await fs.readFile(certificateJSON, 'utf-8'))
+	const { clientId, brokerHostname, caCert, clientCert, privateKey } =
+		JSON.parse(await fs.readFile(certificateJSON, 'utf-8'))
 	console.log(
 		chalk.grey('  MQTT endpoint:       '),
 		chalk.yellow(brokerHostname),
