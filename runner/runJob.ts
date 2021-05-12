@@ -4,10 +4,9 @@ import {
 	Connection,
 	flashCredentials,
 	allSeen,
-	progress,
-	warn,
 	log,
 	runCmd,
+	anySeen,
 } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { RunningFirmwareCIJobDocument } from '../job/job'
 
@@ -38,20 +37,22 @@ export const runJob = async ({
 	deviceLog: string[]
 	flashLog: string[]
 }> => {
+	const { progress, warn } = log({ withTimestamp: true, prefixes: [doc.id] })
+
 	if (powerCycle !== undefined) {
-		progress(doc.id, `Power cycling device`)
-		progress(doc.id, `Turning off ...`)
-		progress(doc.id, powerCycle.offCmd)
+		progress(`Power cycling device`)
+		progress(`Turning off ...`)
+		progress(powerCycle.offCmd)
 		await runCmd({ cmd: powerCycle.offCmd })
-		progress(doc.id, `Waiting ${powerCycle.waitSeconds} seconds ...`)
+		progress(`Waiting ${powerCycle.waitSeconds} seconds ...`)
 		await new Promise((resolve) =>
 			setTimeout(resolve, powerCycle.waitSeconds * 1000),
 		)
-		progress(doc.id, `Turning on ...`)
-		progress(doc.id, powerCycle.onCmd)
+		progress(`Turning on ...`)
+		progress(powerCycle.onCmd)
 		await runCmd({ cmd: powerCycle.onCmd })
 
-		progress(doc.id, `Waiting ${powerCycle.waitSecondsAfterOn} seconds ...`)
+		progress(`Waiting ${powerCycle.waitSecondsAfterOn} seconds ...`)
 		await new Promise((resolve) =>
 			setTimeout(resolve, powerCycle.waitSecondsAfterOn * 1000),
 		)
@@ -59,7 +60,7 @@ export const runJob = async ({
 
 	return new Promise((resolve, reject) => {
 		let done = false
-		progress(doc.id, `Connecting to ${device}`)
+		progress(`Connecting to ${device}`)
 		connect({
 			device: device,
 			atHostHexfile,
@@ -69,10 +70,10 @@ export const runJob = async ({
 				let flashLog: string[] = []
 				const { credentials } = doc
 
-				progress(doc.id, `Setting timeout to ${doc.timeoutInMinutes} minutes`)
+				progress(`Setting timeout to ${doc.timeoutInMinutes} minutes`)
 				const jobTimeout = setTimeout(async () => {
 					done = true
-					warn(doc.id, 'Timeout reached.')
+					warn('Timeout reached.')
 					await connection.end()
 					resolve({
 						result: { timeout: true, abort: false },
@@ -96,11 +97,14 @@ export const runJob = async ({
 					}
 					await flash({
 						hexfile: atHostHexfile,
-						...log('Resetting device with AT Host'),
+						...log({
+							withTimestamp: true,
+							prefixes: ['Resetting device with AT Host'],
+						}),
 					})
 				})
 				if (credentials !== undefined) {
-					progress(doc.id, 'Flashing credentials')
+					progress('Flashing credentials')
 					await flashCredentials({
 						...credentials,
 						...connection,
@@ -108,21 +112,24 @@ export const runJob = async ({
 				}
 				flashLog = await flash({
 					hexfile,
-					...log('Flash Firmware'),
+					...log({
+						withTimestamp: true,
+						prefixes: ['Flash Firmware'],
+					}),
 				})
 
 				const terminateOn = (
 					type: 'abortOn' | 'endOn',
 					result: Result,
 					s: string[],
+					t: (s: string[]) => (s: string) => boolean,
 				) => {
 					progress(
-						doc.id,
 						`<${type}>`,
 						`Setting up ${type} traps. Job will terminate if output contains:`,
 					)
-					s?.map((s) => progress(doc.id, `<${type}>`, s))
-					const terminateCheck = allSeen(s)
+					s?.map((s) => progress(`<${type}>`, s))
+					const terminateCheck = t(s)
 					onData(async (data) => {
 						s?.forEach(async (s) => {
 							if (data.includes(s)) {
@@ -132,11 +139,7 @@ export const runJob = async ({
 						if (terminateCheck(data)) {
 							if (!done) {
 								done = true
-								warn(
-									doc.id,
-									`<${type}>`,
-									'All termination criteria have been seen.',
-								)
+								warn(`<${type}>`, 'All termination criteria have been seen.')
 								clearTimeout(jobTimeout)
 								if (type === 'endOn')
 									await new Promise((resolve) =>
@@ -162,6 +165,7 @@ export const runJob = async ({
 							timeout: false,
 						},
 						doc.abortOn,
+						anySeen,
 					)
 
 				if (doc.endOn !== undefined)
@@ -172,6 +176,7 @@ export const runJob = async ({
 							timeout: false,
 						},
 						doc.endOn,
+						allSeen,
 					)
 			})
 			.catch(reject)

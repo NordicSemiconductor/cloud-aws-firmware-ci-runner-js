@@ -5,11 +5,7 @@ import {
 	IoTClient,
 	Job,
 } from '@aws-sdk/client-iot'
-import {
-	progress,
-	success,
-	warn,
-} from '@nordicsemiconductor/firmware-ci-device-helpers'
+import { log } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { FirmwareCIJobDocument } from './job'
 
 export const waitDefaultTimeoutInMinutes = 5
@@ -30,6 +26,7 @@ export const wait = async ({
 	jobDocument: FirmwareCIJobDocument
 }> =>
 	new Promise((resolve, reject) => {
+		const { progress, success, warn } = log({ withTimestamp: true })
 		const t = setTimeout(
 			() =>
 				reject(new Error(`Timed out waiting for job ${jobId} to complete.`)),

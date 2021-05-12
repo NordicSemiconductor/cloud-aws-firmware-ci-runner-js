@@ -1,12 +1,6 @@
-import * as chalk from 'chalk'
 import { jobs, job } from 'aws-iot-device-sdk'
 import { promises as fs } from 'fs'
-import {
-	download,
-	progress,
-	success,
-	warn,
-} from '@nordicsemiconductor/firmware-ci-device-helpers'
+import { download, log } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { runJob } from './runJob'
 import {
 	defaultTimeoutInMinutes,
@@ -35,16 +29,12 @@ export const runner = async ({
 }): Promise<void> => {
 	const { clientId, brokerHostname, caCert, clientCert, privateKey } =
 		JSON.parse(await fs.readFile(certificateJSON, 'utf-8'))
-	console.log(
-		chalk.grey('  MQTT endpoint:       '),
-		chalk.yellow(brokerHostname),
-	)
-	console.log(chalk.grey('  Device ID:           '), chalk.yellow(clientId))
-	console.log(
-		chalk.grey('  AT Client:           '),
-		chalk.yellow(atHostHexfile),
-	)
-	console.log()
+
+	const { progress, debug, success, warn } = log({ withTimestamp: true })
+
+	debug('  MQTT endpoint:       ', brokerHostname)
+	debug('  Device ID:           ', clientId)
+	debug('  AT Client:           ', atHostHexfile)
 
 	await new Promise((resolve, reject) => {
 		progress('Connecting')
@@ -86,7 +76,10 @@ export const runner = async ({
 						job.inProgress({
 							progress: `downloading ${doc.fw}`,
 						})
-						const hexfile = await download(doc.id.toString(), doc.fw)
+						const hexfile = await download({
+							fw: doc.fw,
+							target: `${doc.id}.hex`,
+						})
 						job.inProgress({
 							progress: 'running',
 						})

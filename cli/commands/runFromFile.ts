@@ -16,7 +16,10 @@ export const runFromFileCommand = (): CommandDefinition => ({
 	],
 	action: async (device, jobFile, { thingy }) => {
 		const doc = JSON.parse(await fs.readFile(jobFile, 'utf-8'))
-		const hexfile = await download(doc.id.toString(), doc.fw)
+		const hexfile = await download({
+			fw: doc.fw,
+			target: `${doc.id}.hex`,
+		})
 		await runJob({
 			doc,
 			hexfile,
