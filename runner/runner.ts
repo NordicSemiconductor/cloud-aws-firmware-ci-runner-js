@@ -34,7 +34,7 @@ export const runner = async ({
 
 	debug('  MQTT endpoint:       ', brokerHostname)
 	debug('  Device ID:           ', clientId)
-	debug('  AT Client:           ', atHostHexfile)
+	debug('  Host:                ', atHostHexfile)
 
 	await new Promise((resolve, reject) => {
 		progress('Connecting')
