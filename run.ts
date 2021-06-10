@@ -172,6 +172,7 @@ export const run = ({
 						await flashCredentials({
 							...credentials,
 							...connection,
+							secTag,
 						})
 					}
 					flashLog = await flash({
