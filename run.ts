@@ -10,6 +10,10 @@ import {
 } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { promises as fs } from 'fs'
 import * as path from 'path'
+import * as semver from 'semver'
+
+const defaultPort = '/dev/ttyACM0'
+const defaultSecTag = 42
 
 type Result = {
 	connected: boolean
@@ -23,7 +27,7 @@ type Args = {
 	deviceId: string
 	appVersion: string
 	network: 'ltem' | 'nbiot'
-	secTag: number
+	secTag?: number
 	timeoutInMinutes: number
 	hexFile: string
 	fotaFile: string
@@ -50,14 +54,14 @@ type Args = {
 
 // FIXME: implement scheduling FOTA
 export const run = ({
-	device,
+	port,
 	target,
 }: {
-	device: string
+	port?: string
 	target: 'thingy91_nrf9160ns' | 'nrf9160dk_nrf9160ns'
 }): ((args: Args) => Promise<Result>) => {
 	const { progress, warn, debug } = log({ withTimestamp: true })
-	debug('device', device)
+	debug('port', port ?? defaultPort)
 	debug('target', target)
 
 	return async ({
@@ -79,7 +83,7 @@ export const run = ({
 	}: Args): Promise<Result> => {
 		debug('appVersion', appVersion)
 		debug('network', network)
-		debug('secTag', secTag)
+		debug('secTag', secTag ?? defaultSecTag)
 		debug('timeoutInMinutes', timeoutInMinutes)
 		debug('hexFile', hexFile)
 		debug('fotaFile', fotaFile)
@@ -117,9 +121,9 @@ export const run = ({
 
 		const res = await new Promise<Result>((resolve, reject) => {
 			let done = false
-			progress(`Connecting to ${device}`)
+			progress(`Connecting to ${port ?? defaultPort}`)
 			connect({
-				device: device,
+				device: port ?? defaultPort,
 				atHostHexfile: atHost,
 				...log(),
 			})
@@ -167,14 +171,25 @@ export const run = ({
 							}),
 						})
 					})
-					if (credentials !== undefined) {
-						progress('Flashing credentials')
-						await flashCredentials({
-							...credentials,
-							...connection,
-							secTag,
-						})
+
+					const mfwv = (await connection.at('AT+CGMR'))[0]
+					if (mfwv !== undefined) {
+						progress(`Firmware version:`, mfwv)
+						const v = mfwv.split('_')[2]
+						if (semver.satisfies(v, '>=1.3.0')) {
+							progress(`Resetting modem settings`, port ?? defaultPort)
+							await connection.at('AT%XFACTORYRESET=0')
+						} else {
+							warn(`Please update your modem firmware!`)
+						}
 					}
+
+					progress('Flashing credentials')
+					await flashCredentials({
+						...credentials,
+						...connection,
+						secTag: secTag ?? defaultSecTag,
+					})
 					flashLog = await flash({
 						hexfile: hexFile,
 						...log({
