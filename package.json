@@ -37,6 +37,7 @@
     "commander": "7.2.0",
     "form-data": "4.0.0",
     "node-fetch": "2.6.1",
+    "semver": "7.3.5",
     "serialport": "9.1.0",
     "shell-quote": "*",
     "uuid": "8.3.2"
@@ -47,8 +48,9 @@
     "@nordicsemiconductor/asset-tracker-cloud-code-style": "9.0.4",
     "@nordicsemiconductor/eslint-config-asset-tracker-cloud-typescript": "7.0.25",
     "@types/aws-iot-device-sdk": "2.2.2",
-    "@types/node": "15.3.1",
+    "@types/node": "15.12.2",
     "@types/node-fetch": "2.5.10",
+    "@types/semver": "7.3.6",
     "@types/serialport": "8.0.1",
     "@types/shell-quote": "*",
     "@types/uuid": "8.3.0",
