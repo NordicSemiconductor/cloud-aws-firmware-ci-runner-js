@@ -12,7 +12,9 @@ export const deviceHasConnected = async ({
 	deviceId: string
 	iotData: IoTDataPlaneClient
 }): Promise<boolean> => {
-	const { progress, success, error } = log({ prefixes: [deviceId] })
+	const { progress, success, error } = log({
+		prefixes: [deviceId, 'connection'],
+	})
 
 	progress(`Checking if device has connected ...`)
 	try {
