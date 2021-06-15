@@ -11,6 +11,18 @@ import {
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as semver from 'semver'
+import { schedulaFOTA } from './scheduleFOTA'
+import {
+	DeleteObjectCommand,
+	PutObjectCommand,
+	S3Client,
+} from '@aws-sdk/client-s3'
+import { IoTClient } from '@aws-sdk/client-iot'
+import { IoTDataPlaneClient } from '@aws-sdk/client-iot-data-plane'
+import { CloudFormationClient } from '@aws-sdk/client-cloudformation'
+import { stackOutput } from '@nordicsemiconductor/cloudformation-helpers'
+import { deviceHasConnected } from './deviceHasConnected'
+import { connected } from 'process'
 
 const defaultPort = '/dev/ttyACM0'
 const defaultSecTag = 42
@@ -100,6 +112,21 @@ export const run = ({
 				? atHostHexfile.thingy91
 				: atHostHexfile['9160dk']
 
+		const awsConfig = {
+			region: testEnv.region,
+			credentials: {
+				accessKeyId: testEnv.accessKeyId,
+				secretAccessKey: testEnv.secretAccessKey,
+			},
+		}
+		const s3 = new S3Client(awsConfig)
+		const iot = new IoTClient(awsConfig)
+		const iotData = new IoTDataPlaneClient(awsConfig)
+		const { bucketName } = await stackOutput(
+			new CloudFormationClient(awsConfig),
+		)<{ bucketName: string }>(`${testEnv.stackName}-firmware-ci`)
+		const fotaFileName = `${deviceId.substr(0, 8)}.bin`
+
 		if (powerCycle !== undefined) {
 			progress(`Power cycling device`)
 			progress(`Turning off ...`)
@@ -121,6 +148,8 @@ export const run = ({
 
 		const res = await new Promise<Result>((resolve, reject) => {
 			let done = false
+			let connected = false
+			let schedulaFotaTimeout: NodeJS.Timeout
 			progress(`Connecting to ${port ?? defaultPort}`)
 			connect({
 				device: port ?? defaultPort,
@@ -141,8 +170,10 @@ export const run = ({
 						done = true
 						warn('Timeout reached.')
 						await connection.end()
+						if (schedulaFotaTimeout !== undefined)
+							clearTimeout(schedulaFotaTimeout)
 						resolve({
-							connected: true,
+							connected,
 							timeout: true,
 							abort: false,
 							deviceLog,
@@ -154,9 +185,11 @@ export const run = ({
 						if (timeout) {
 							done = true
 							clearTimeout(jobTimeout)
+							if (schedulaFotaTimeout !== undefined)
+								clearTimeout(schedulaFotaTimeout)
 							warn('Device read timeout occurred.')
 							resolve({
-								connected: true,
+								connected,
 								timeout: true,
 								abort: false,
 								deviceLog,
@@ -220,13 +253,15 @@ export const run = ({
 									done = true
 									warn(`<${type}>`, 'All termination criteria have been seen.')
 									clearTimeout(jobTimeout)
+									if (schedulaFotaTimeout !== undefined)
+										clearTimeout(schedulaFotaTimeout)
 									if (type === 'endOn')
 										await new Promise((resolve) =>
 											setTimeout(resolve, (endOnWaitSeconds ?? 60) * 1000),
 										)
 									await connection.end()
 									resolve({
-										connected: true,
+										connected,
 										abort: type === 'abortOn',
 										timeout: false,
 										deviceLog,
@@ -239,9 +274,59 @@ export const run = ({
 
 					if (abortOn !== undefined) terminateOn('abortOn', abortOn, anySeen)
 					if (endOn !== undefined) terminateOn('endOn', endOn, allSeen)
+
+					// Schedule Firmware update, if device has connected
+					const tryScheduleFota = async () => {
+						if (
+							await deviceHasConnected({
+								deviceId,
+								iotData,
+							})
+						) {
+							connected = true
+
+							// Upload FOTA file
+							await s3.send(
+								new PutObjectCommand({
+									Bucket: bucketName,
+									Key: fotaFileName,
+									Body: await fs.readFile(fotaFile),
+									ContentType: 'text/octet-stream',
+								}),
+							)
+
+							// Schedula
+							await schedulaFOTA({
+								deviceId,
+								iot,
+								iotData,
+								bucketName,
+								appVersion,
+								fotaFile,
+								fotaFileName,
+								region: awsConfig.region,
+							})
+
+							// Done, do not reschedule
+							return
+						}
+						// Reschedule
+						schedulaFotaTimeout = setTimeout(tryScheduleFota, 60 * 1000)
+					}
+					schedulaFotaTimeout = setTimeout(tryScheduleFota, 60 * 1000)
 				})
 				.catch(reject)
 		})
+
+		// Delete FOTA file
+		if (connected) {
+			await s3.send(
+				new DeleteObjectCommand({
+					Bucket: bucketName,
+					Key: fotaFileName,
+				}),
+			)
+		}
 
 		await Promise.all([
 			fs.writeFile(flashLogLocation, res.flashLog.join('\n'), 'utf-8'),
