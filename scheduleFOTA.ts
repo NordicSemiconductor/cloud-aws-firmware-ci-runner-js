@@ -26,7 +26,7 @@ export const schedulaFOTA = async ({
 	bucketName: string
 	appVersion: string
 }): Promise<string> => {
-	const { progress } = log({ prefixes: [deviceId, 'FOTA'] })
+	const { progress } = log({ prefixes: ['FOTA', deviceId] })
 
 	const { thingArn } = await iot.send(
 		new DescribeThingCommand({
