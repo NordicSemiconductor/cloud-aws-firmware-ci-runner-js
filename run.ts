@@ -146,48 +146,34 @@ export const run = ({
 			)
 		}
 
-		const res = await new Promise<Result>((resolve, reject) => {
-			let done = false
-			let connected = false
-			let schedulaFotaTimeout: NodeJS.Timeout
-			progress(`Connecting to ${port ?? defaultPort}`)
-			connect({
-				device: port ?? defaultPort,
-				atHostHexfile: atHost,
-				...log(),
-			})
-				.then(async ({ connection, deviceLog, onData, onEnd }) => {
-					let flashLog: string[] = []
-					const credentials = JSON.parse(
-						await fs.readFile(
-							path.resolve(certDir, `device-${deviceId}.json`),
-							'utf-8',
-						),
-					)
+		let flashLog: string[] = []
 
-					progress(`Setting timeout to ${timeoutInMinutes} minutes`)
-					const jobTimeout = setTimeout(async () => {
-						done = true
-						warn('Timeout reached.')
-						await connection.end()
-						if (schedulaFotaTimeout !== undefined)
-							clearTimeout(schedulaFotaTimeout)
-						resolve({
-							connected,
-							timeout: true,
-							abort: false,
-							deviceLog,
-							flashLog,
-						})
-					}, timeoutInMinutes * 60 * 1000)
+		try {
+			const res = await new Promise<Result>((resolve, reject) => {
+				let done = false
+				let connected = false
+				let schedulaFotaTimeout: NodeJS.Timeout
+				progress(`Connecting to ${port ?? defaultPort}`)
+				connect({
+					device: port ?? defaultPort,
+					atHostHexfile: atHost,
+					...log(),
+				})
+					.then(async ({ connection, deviceLog, onData, onEnd }) => {
+						const credentials = JSON.parse(
+							await fs.readFile(
+								path.resolve(certDir, `device-${deviceId}.json`),
+								'utf-8',
+							),
+						)
 
-					onEnd(async (_, timeout) => {
-						if (timeout) {
+						progress(`Setting timeout to ${timeoutInMinutes} minutes`)
+						const jobTimeout = setTimeout(async () => {
 							done = true
-							clearTimeout(jobTimeout)
+							warn('Timeout reached.')
+							await connection.end()
 							if (schedulaFotaTimeout !== undefined)
 								clearTimeout(schedulaFotaTimeout)
-							warn('Device read timeout occurred.')
 							resolve({
 								connected,
 								timeout: true,
@@ -195,143 +181,165 @@ export const run = ({
 								deviceLog,
 								flashLog,
 							})
+						}, timeoutInMinutes * 60 * 1000)
+
+						onEnd(async (_, timeout) => {
+							if (timeout) {
+								done = true
+								clearTimeout(jobTimeout)
+								if (schedulaFotaTimeout !== undefined)
+									clearTimeout(schedulaFotaTimeout)
+								warn('Device read timeout occurred.')
+								resolve({
+									connected,
+									timeout: true,
+									abort: false,
+									deviceLog,
+									flashLog,
+								})
+							}
+							await flash({
+								hexfile: atHost,
+								...log({
+									withTimestamp: true,
+									prefixes: ['Resetting device with AT Host'],
+								}),
+							})
+						})
+
+						const mfwv = (await connection.at('AT+CGMR'))[0]
+						if (mfwv !== undefined) {
+							progress(`Firmware version:`, mfwv)
+							const v = mfwv.split('_')[2]
+							if (semver.satisfies(v, '>=1.3.0')) {
+								progress(`Resetting modem settings`, port ?? defaultPort)
+								await connection.at('AT%XFACTORYRESET=0')
+							} else {
+								warn(`Please update your modem firmware!`)
+							}
 						}
-						await flash({
-							hexfile: atHost,
+
+						progress('Flashing credentials')
+						await flashCredentials({
+							...credentials,
+							...connection,
+							secTag: secTag ?? defaultSecTag,
+						})
+						flashLog = await flash({
+							hexfile: hexFile,
 							...log({
 								withTimestamp: true,
-								prefixes: ['Resetting device with AT Host'],
+								prefixes: ['Flash Firmware'],
 							}),
 						})
-					})
 
-					const mfwv = (await connection.at('AT+CGMR'))[0]
-					if (mfwv !== undefined) {
-						progress(`Firmware version:`, mfwv)
-						const v = mfwv.split('_')[2]
-						if (semver.satisfies(v, '>=1.3.0')) {
-							progress(`Resetting modem settings`, port ?? defaultPort)
-							await connection.at('AT%XFACTORYRESET=0')
-						} else {
-							warn(`Please update your modem firmware!`)
-						}
-					}
-
-					progress('Flashing credentials')
-					await flashCredentials({
-						...credentials,
-						...connection,
-						secTag: secTag ?? defaultSecTag,
-					})
-					flashLog = await flash({
-						hexfile: hexFile,
-						...log({
-							withTimestamp: true,
-							prefixes: ['Flash Firmware'],
-						}),
-					})
-
-					const terminateOn = (
-						type: 'abortOn' | 'endOn',
-						s: string[],
-						t: (s: string[]) => (s: string) => boolean,
-					) => {
-						progress(
-							`<${type}>`,
-							`Setting up ${type} traps. Job will terminate if output contains:`,
-						)
-						s?.map((s) => progress(`<${type}>`, s))
-						const terminateCheck = t(s)
-						onData(async (data) => {
-							s?.forEach(async (s) => {
-								if (data.includes(s)) {
-									warn(`<${type}>`, 'Termination criteria seen:', s)
-								}
-							})
-							if (terminateCheck(data)) {
-								if (!done) {
-									done = true
-									warn(`<${type}>`, 'All termination criteria have been seen.')
-									clearTimeout(jobTimeout)
-									if (schedulaFotaTimeout !== undefined)
-										clearTimeout(schedulaFotaTimeout)
-									if (type === 'endOn')
-										await new Promise((resolve) =>
-											setTimeout(resolve, (endOnWaitSeconds ?? 60) * 1000),
-										)
-									await connection.end()
-									resolve({
-										connected,
-										abort: type === 'abortOn',
-										timeout: false,
-										deviceLog,
-										flashLog,
-									})
-								}
-							}
-						})
-					}
-
-					if (abortOn !== undefined) terminateOn('abortOn', abortOn, anySeen)
-					if (endOn !== undefined) terminateOn('endOn', endOn, allSeen)
-
-					// Schedule Firmware update, if device has connected
-					const tryScheduleFota = async () => {
-						if (
-							await deviceHasConnected({
-								deviceId,
-								iotData,
-							})
-						) {
-							connected = true
-
-							// Upload FOTA file
-							await s3.send(
-								new PutObjectCommand({
-									Bucket: bucketName,
-									Key: fotaFileName,
-									Body: await fs.readFile(fotaFile),
-									ContentType: 'text/octet-stream',
-								}),
+						const terminateOn = (
+							type: 'abortOn' | 'endOn',
+							s: string[],
+							t: (s: string[]) => (s: string) => boolean,
+						) => {
+							progress(
+								`<${type}>`,
+								`Setting up ${type} traps. Job will terminate if output contains:`,
 							)
-
-							// Schedula
-							await schedulaFOTA({
-								deviceId,
-								iot,
-								iotData,
-								bucketName,
-								appVersion,
-								fotaFile,
-								fotaFileName,
-								region: awsConfig.region,
+							s?.map((s) => progress(`<${type}>`, s))
+							const terminateCheck = t(s)
+							onData(async (data) => {
+								s?.forEach(async (s) => {
+									if (data.includes(s)) {
+										warn(`<${type}>`, 'Termination criteria seen:', s)
+									}
+								})
+								if (terminateCheck(data)) {
+									if (!done) {
+										done = true
+										warn(
+											`<${type}>`,
+											'All termination criteria have been seen.',
+										)
+										clearTimeout(jobTimeout)
+										if (schedulaFotaTimeout !== undefined)
+											clearTimeout(schedulaFotaTimeout)
+										if (type === 'endOn')
+											await new Promise((resolve) =>
+												setTimeout(resolve, (endOnWaitSeconds ?? 60) * 1000),
+											)
+										await connection.end()
+										resolve({
+											connected,
+											abort: type === 'abortOn',
+											timeout: false,
+											deviceLog,
+											flashLog,
+										})
+									}
+								}
 							})
-
-							// Done, do not reschedule
-							return
 						}
-						// Reschedule
+
+						if (abortOn !== undefined) terminateOn('abortOn', abortOn, anySeen)
+						if (endOn !== undefined) terminateOn('endOn', endOn, allSeen)
+
+						// Schedule Firmware update, if device has connected
+						const tryScheduleFota = async () => {
+							if (
+								await deviceHasConnected({
+									deviceId,
+									iotData,
+								})
+							) {
+								connected = true
+
+								// Upload FOTA file
+								await s3.send(
+									new PutObjectCommand({
+										Bucket: bucketName,
+										Key: fotaFileName,
+										Body: await fs.readFile(fotaFile),
+										ContentType: 'text/octet-stream',
+									}),
+								)
+
+								// Schedula
+								await schedulaFOTA({
+									deviceId,
+									iot,
+									iotData,
+									bucketName,
+									appVersion,
+									fotaFile,
+									fotaFileName,
+									region: awsConfig.region,
+								})
+
+								// Done, do not reschedule
+								return
+							}
+							// Reschedule
+							schedulaFotaTimeout = setTimeout(tryScheduleFota, 60 * 1000)
+						}
 						schedulaFotaTimeout = setTimeout(tryScheduleFota, 60 * 1000)
-					}
-					schedulaFotaTimeout = setTimeout(tryScheduleFota, 60 * 1000)
-				})
-				.catch(reject)
-		})
+					})
+					.catch(reject)
+			})
+			// Delete FOTA file
+			if (connected) {
+				await s3.send(
+					new DeleteObjectCommand({
+						Bucket: bucketName,
+						Key: fotaFileName,
+					}),
+				)
+			}
 
-		// Delete FOTA file
-		if (connected) {
-			await s3.send(
-				new DeleteObjectCommand({
-					Bucket: bucketName,
-					Key: fotaFileName,
-				}),
-			)
+			await Promise.all([
+				fs.writeFile(flashLogLocation, res.flashLog.join('\n'), 'utf-8'),
+				fs.writeFile(deviceLogLocation, res.deviceLog.join('\n'), 'utf-8'),
+			])
+			return res
+		} catch (error) {
+			console.error(error)
+			process.exit(-1)
 		}
-
-		await Promise.all([
-			fs.writeFile(flashLogLocation, res.flashLog.join('\n'), 'utf-8'),
-			fs.writeFile(deviceLogLocation, res.deviceLog.join('\n'), 'utf-8'),
-		])
-		return res
 	}
 }
