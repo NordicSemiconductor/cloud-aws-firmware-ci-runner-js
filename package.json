@@ -2,7 +2,6 @@
   "name": "@nordicsemiconductor/firmware-ci-runner-aws",
   "version": "0.0.0-development",
   "description": "Exposes real nRF9160 hardware to be used for end-to-end tests. Runs on AWS.",
-  "main": "./dist/export.js",
   "bin": "./cli/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -28,7 +27,9 @@
   },
   "homepage": "https://github.com/NordicSemiconductor/cloud-aws-firmware-ci-runner-js#readme",
   "dependencies": {
+    "@aws-sdk/client-cloudformation": "3.18.0",
     "@aws-sdk/client-iot": "3.18.0",
+    "@aws-sdk/client-iot-data-plane": "3.18.0",
     "@aws-sdk/client-s3": "3.18.0",
     "@aws-sdk/client-sts": "3.18.0",
     "@aws-sdk/s3-presigned-post": "3.18.0",
@@ -38,6 +39,7 @@
     "commander": "7.2.0",
     "form-data": "4.0.0",
     "node-fetch": "2.6.1",
+    "semver": "7.3.5",
     "serialport": "9.1.0",
     "shell-quote": "*",
     "uuid": "8.3.2"
@@ -48,8 +50,9 @@
     "@nordicsemiconductor/asset-tracker-cloud-code-style": "9.0.4",
     "@nordicsemiconductor/eslint-config-asset-tracker-cloud-typescript": "7.0.25",
     "@types/aws-iot-device-sdk": "2.2.2",
-    "@types/node": "15.3.1",
+    "@types/node": "15.12.2",
     "@types/node-fetch": "2.5.10",
+    "@types/semver": "7.3.6",
     "@types/serialport": "8.0.1",
     "@types/shell-quote": "*",
     "@types/uuid": "8.3.0",
