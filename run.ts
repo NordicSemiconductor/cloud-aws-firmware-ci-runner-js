@@ -146,6 +146,12 @@ export const run = ({
 			)
 		}
 
+		// nrfjprog --eraseall
+		await runCmd({
+			cmd: 'nrfjprog --eraseall',
+			...log({ prefixes: ['eraseall'] }),
+		})
+
 		let flashLog: string[] = []
 
 		try {
