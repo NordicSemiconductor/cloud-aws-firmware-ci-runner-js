@@ -134,7 +134,7 @@ export const run = ({
 			await runCmd({ cmd: powerCycle.offCmd })
 			progress(`Waiting ${powerCycle.waitSecondsAfterOff} seconds ...`)
 			await new Promise((resolve) =>
-				setTimeout(resolve, powerCycle.waitSecondsAfterOff * 1000),
+				setTimeout(resolve, powerCycle.waitSecondsAfterOff * 1000, []),
 			)
 			progress(`Turning on ...`)
 			progress(powerCycle.onCmd)
@@ -142,7 +142,7 @@ export const run = ({
 
 			progress(`Waiting ${powerCycle.waitSecondsAfterOn} seconds ...`)
 			await new Promise((resolve) =>
-				setTimeout(resolve, powerCycle.waitSecondsAfterOn * 1000),
+				setTimeout(resolve, powerCycle.waitSecondsAfterOn * 1000, []),
 			)
 		}
 
@@ -268,7 +268,11 @@ export const run = ({
 											clearTimeout(schedulaFotaTimeout)
 										if (type === 'endOn')
 											await new Promise((resolve) =>
-												setTimeout(resolve, (endOnWaitSeconds ?? 60) * 1000),
+												setTimeout(
+													resolve,
+													(endOnWaitSeconds ?? 60) * 1000,
+													[],
+												),
 											)
 										await connection.end()
 										resolve({
