@@ -152,11 +152,11 @@ export const run = ({
 		})
 
 		let flashLog: string[] = []
+		let connected = false
 
 		try {
 			const res = await new Promise<Result>((resolve, reject) => {
 				let done = false
-				let connected = false
 				let schedulaFotaTimeout: NodeJS.Timeout
 				progress(`Connecting to ${port ?? defaultPort}`)
 				connect({
