@@ -21,7 +21,6 @@ import { IoTDataPlaneClient } from '@aws-sdk/client-iot-data-plane'
 import { CloudFormationClient } from '@aws-sdk/client-cloudformation'
 import { stackOutput } from '@nordicsemiconductor/cloudformation-helpers'
 import { deviceHasConnected } from './deviceHasConnected'
-import { connected } from 'process'
 
 const defaultPort = '/dev/ttyACM0'
 const defaultSecTag = 42
