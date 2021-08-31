@@ -6,6 +6,7 @@ import {
 	runCmd,
 	anySeen,
 	atHostHexfile,
+	Connection,
 } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { promises as fs } from 'fs'
 import * as path from 'path'
@@ -14,6 +15,7 @@ import { schedulaFOTA } from './scheduleFOTA'
 import {
 	DeleteObjectCommand,
 	PutObjectCommand,
+	PutObjectCommandOutput,
 	S3Client,
 } from '@aws-sdk/client-s3'
 import { IoTClient } from '@aws-sdk/client-iot'
@@ -150,34 +152,45 @@ export const run = ({
 			...log({ prefixes: ['eraseall'] }),
 		})
 
-		let flashLog: string[] = []
-		let connected = false
+		let fotaUploadResult: PutObjectCommandOutput | undefined
 
 		try {
 			const res = await new Promise<Result>((resolve, reject) => {
+				let flashLog: string[] = []
+				let connected = false
 				let done = false
+				let connection: Connection
+				let deviceLog: string[]
 				let schedulaFotaTimeout: NodeJS.Timeout
+
+				progress(`Setting timeout to ${timeoutInMinutes} minutes`)
+				const jobTimeout = setTimeout(async () => {
+					done = true
+					warn('Timeout reached.')
+					await connection?.end()
+					if (schedulaFotaTimeout !== undefined)
+						clearTimeout(schedulaFotaTimeout)
+					resolve({
+						connected,
+						timeout: true,
+						abort: false,
+						deviceLog,
+						flashLog,
+					})
+				}, timeoutInMinutes * 60 * 1000)
+
 				progress(`Connecting to ${port ?? defaultPort}`)
 				connect({
 					device: port ?? defaultPort,
 					atHostHexfile: atHost,
 					...log(),
-				})
-					.then(async ({ connection, deviceLog, onData, onEnd }) => {
-						const credentials = JSON.parse(
-							await fs.readFile(
-								path.resolve(certDir, `device-${deviceId}.json`),
-								'utf-8',
-							),
-						)
-
-						progress(`Setting timeout to ${timeoutInMinutes} minutes`)
-						const jobTimeout = setTimeout(async () => {
+					onEnd: async (_, timeout) => {
+						if (timeout) {
 							done = true
-							warn('Timeout reached.')
-							await connection.end()
+							clearTimeout(jobTimeout)
 							if (schedulaFotaTimeout !== undefined)
 								clearTimeout(schedulaFotaTimeout)
+							warn('Device read timeout occurred.')
 							resolve({
 								connected,
 								timeout: true,
@@ -185,31 +198,25 @@ export const run = ({
 								deviceLog,
 								flashLog,
 							})
-						}, timeoutInMinutes * 60 * 1000)
-
-						onEnd(async (_, timeout) => {
-							if (timeout) {
-								done = true
-								clearTimeout(jobTimeout)
-								if (schedulaFotaTimeout !== undefined)
-									clearTimeout(schedulaFotaTimeout)
-								warn('Device read timeout occurred.')
-								resolve({
-									connected,
-									timeout: true,
-									abort: false,
-									deviceLog,
-									flashLog,
-								})
-							}
-							await flash({
-								hexfile: atHost,
-								...log({
-									withTimestamp: true,
-									prefixes: ['Resetting device with AT Host'],
-								}),
-							})
+						}
+						await flash({
+							hexfile: atHost,
+							...log({
+								withTimestamp: true,
+								prefixes: ['Resetting device with AT Host'],
+							}),
 						})
+					},
+				})
+					.then(async ({ connection: c, deviceLog: l, onData }) => {
+						connection = c
+						deviceLog = l
+						const credentials = JSON.parse(
+							await fs.readFile(
+								path.resolve(certDir, `device-${deviceId}.json`),
+								'utf-8',
+							),
+						)
 
 						const mfwv = (await connection.at('AT+CGMR'))[0]
 						if (mfwv !== undefined) {
@@ -320,7 +327,7 @@ export const run = ({
 								connected = true
 
 								// Upload FOTA file
-								await s3.send(
+								fotaUploadResult = await s3.send(
 									new PutObjectCommand({
 										Bucket: bucketName,
 										Key: fotaFileName,
@@ -352,7 +359,7 @@ export const run = ({
 					.catch(reject)
 			})
 			// Delete FOTA file
-			if (connected) {
+			if (fotaUploadResult !== undefined) {
 				await s3.send(
 					new DeleteObjectCommand({
 						Bucket: bucketName,
