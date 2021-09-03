@@ -52,7 +52,7 @@
     "@nordicsemiconductor/eslint-config-asset-tracker-cloud-typescript": "8.1.1",
     "@types/aws-iot-device-sdk": "2.2.3",
     "@types/node": "16.7.10",
-    "@types/node-fetch": "2.5.12",
+    "@types/node-fetch": "3.0.2",
     "@types/semver": "7.3.8",
     "@types/serialport": "8.0.2",
     "@types/shell-quote": "1.7.1",
