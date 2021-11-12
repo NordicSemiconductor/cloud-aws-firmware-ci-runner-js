@@ -33,8 +33,8 @@ export const deviceHasConnected = async ({
 		}
 		success('Device has connected and reported device information.')
 		return true
-	} catch {
-		error('Device has not connected.', error)
+	} catch (err) {
+		error('Device has not connected.', err)
 		return false
 	}
 }
