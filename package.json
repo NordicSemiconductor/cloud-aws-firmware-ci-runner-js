@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "@nordicsemiconductor/asset-tracker-cloud-code-style": "10.0.4",
-    "@types/aws-iot-device-sdk": "2.2.3",
+    "@types/aws-iot-device-sdk": "2.2.4",
     "@types/node": "16.11.17",
     "@types/node-fetch": "3.0.3",
     "@types/semver": "7.3.9",
