@@ -47,7 +47,7 @@
     "uuid": "8.3.2"
   },
   "devDependencies": {
-    "@nordicsemiconductor/asset-tracker-cloud-code-style": "11.0.24",
+    "@nordicsemiconductor/asset-tracker-cloud-code-style": "11.0.25",
     "@types/aws-iot-device-sdk": "2.2.4",
     "@types/node": "17.0.9",
     "@types/node-fetch": "3.0.3",
