@@ -1,10 +1,10 @@
-import { log } from '@nordicsemiconductor/firmware-ci-device-helpers'
-import { IoTDataPlaneClient } from '@aws-sdk/client-iot-data-plane'
 import {
-	IoTClient,
-	DescribeThingCommand,
 	CreateJobCommand,
+	DescribeThingCommand,
+	IoTClient,
 } from '@aws-sdk/client-iot'
+import { IoTDataPlaneClient } from '@aws-sdk/client-iot-data-plane'
+import { log } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { promises as fs } from 'fs'
 import { v4 } from 'uuid'
 

@@ -1,28 +1,28 @@
-import {
-	flash,
-	connect,
-	allSeen,
-	log,
-	runCmd,
-	anySeen,
-	atHostHexfile,
-	Connection,
-} from '@nordicsemiconductor/firmware-ci-device-helpers'
-import { promises as fs } from 'fs'
-import * as path from 'path'
-import * as semver from 'semver'
-import { schedulaFOTA } from './scheduleFOTA'
+import { CloudFormationClient } from '@aws-sdk/client-cloudformation'
+import { IoTClient } from '@aws-sdk/client-iot'
+import { IoTDataPlaneClient } from '@aws-sdk/client-iot-data-plane'
 import {
 	DeleteObjectCommand,
 	PutObjectCommand,
 	PutObjectCommandOutput,
 	S3Client,
 } from '@aws-sdk/client-s3'
-import { IoTClient } from '@aws-sdk/client-iot'
-import { IoTDataPlaneClient } from '@aws-sdk/client-iot-data-plane'
-import { CloudFormationClient } from '@aws-sdk/client-cloudformation'
 import { stackOutput } from '@nordicsemiconductor/cloudformation-helpers'
+import {
+	allSeen,
+	anySeen,
+	atHostHexfile,
+	connect,
+	Connection,
+	flash,
+	log,
+	runCmd,
+} from '@nordicsemiconductor/firmware-ci-device-helpers'
+import { promises as fs } from 'fs'
+import * as path from 'path'
+import * as semver from 'semver'
 import { deviceHasConnected } from './deviceHasConnected'
+import { schedulaFOTA } from './scheduleFOTA'
 
 const defaultPort = '/dev/ttyACM0'
 const defaultSecTag = 42
@@ -125,7 +125,7 @@ export const run = ({
 		const { bucketName } = await stackOutput(
 			new CloudFormationClient(awsConfig),
 		)<{ bucketName: string }>(`${testEnv.stackName}-firmware-ci`)
-		const fotaFileName = `${deviceId.substr(0, 8)}.bin`
+		const fotaFileName = `${deviceId.slice(0, 8)}.bin`
 
 		if (powerCycle !== undefined) {
 			progress(`Power cycling device`)

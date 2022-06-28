@@ -1,8 +1,8 @@
-import { log } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import {
-	IoTDataPlaneClient,
 	GetThingShadowCommand,
+	IoTDataPlaneClient,
 } from '@aws-sdk/client-iot-data-plane'
+import { log } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { TextDecoder } from 'util'
 
 export const deviceHasConnected = async ({
