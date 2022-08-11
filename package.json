@@ -51,7 +51,7 @@
     "@types/aws-iot-device-sdk": "2.2.4",
     "@types/node": "18.0.0",
     "@types/node-fetch": "3.0.3",
-    "@types/semver": "7.3.11",
+    "@types/semver": "7.3.12",
     "@types/serialport": "8.0.2",
     "@types/shell-quote": "1.7.1",
     "@types/uuid": "8.3.4",
