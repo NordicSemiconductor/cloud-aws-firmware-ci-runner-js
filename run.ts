@@ -9,7 +9,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { stackOutput } from '@nordicsemiconductor/cloudformation-helpers'
 import {
-	allSeen,
+	allSeenNoOrder,
 	anySeen,
 	atHostHexfile,
 	connect,
@@ -314,7 +314,7 @@ export const run = ({
 						}
 
 						if (abortOn !== undefined) terminateOn('abortOn', abortOn, anySeen)
-						if (endOn !== undefined) terminateOn('endOn', endOn, allSeen)
+						if (endOn !== undefined) terminateOn('endOn', endOn, allSeenNoOrder)
 
 						// Schedule Firmware update, if device has connected
 						const tryScheduleFota = async () => {
