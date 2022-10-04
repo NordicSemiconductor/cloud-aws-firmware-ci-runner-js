@@ -39,7 +39,7 @@
     "commander": "9.4.1",
     "form-data": "4.0.0",
     "node-fetch": "3.2.10",
-    "semver": "7.3.7",
+    "semver": "7.3.8",
     "serialport": "10.4.0",
     "shell-quote": "1.7.3",
     "uuid": "9.0.0"
