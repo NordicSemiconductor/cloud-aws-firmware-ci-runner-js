@@ -41,7 +41,7 @@
     "node-fetch": "3.2.10",
     "semver": "7.3.8",
     "serialport": "10.4.0",
-    "shell-quote": "1.7.3",
+    "shell-quote": "1.7.4",
     "uuid": "9.0.0"
   },
   "devDependencies": {
