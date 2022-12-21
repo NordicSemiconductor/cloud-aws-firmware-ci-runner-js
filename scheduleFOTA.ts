@@ -6,7 +6,7 @@ import {
 import { IoTDataPlaneClient } from '@aws-sdk/client-iot-data-plane'
 import { log } from '@nordicsemiconductor/firmware-ci-device-helpers'
 import { promises as fs } from 'fs'
-import { v4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 
 export const schedulaFOTA = async ({
 	deviceId,
@@ -49,7 +49,7 @@ export const schedulaFOTA = async ({
 		fwversion: `${appVersion}-upgraded`,
 		targetBoard: '9160DK',
 	}
-	const jobId = v4()
+	const jobId = randomUUID()
 	await iot.send(
 		new CreateJobCommand({
 			jobId,
