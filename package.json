@@ -41,8 +41,7 @@
     "node-fetch": "3.3.0",
     "semver": "7.3.8",
     "serialport": "10.5.0",
-    "shell-quote": "1.7.4",
-    "uuid": "9.0.0"
+    "shell-quote": "1.7.4"
   },
   "devDependencies": {
     "@nordicsemiconductor/asset-tracker-cloud-code-style": "11.0.160",
@@ -52,7 +51,6 @@
     "@types/semver": "7.3.13",
     "@types/serialport": "8.0.2",
     "@types/shell-quote": "1.7.1",
-    "@types/uuid": "9.0.0",
     "chalk": "5.2.0"
   },
   "lint-staged": {
