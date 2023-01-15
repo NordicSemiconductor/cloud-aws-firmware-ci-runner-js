@@ -44,7 +44,7 @@
     "shell-quote": "1.7.4"
   },
   "devDependencies": {
-    "@nordicsemiconductor/asset-tracker-cloud-code-style": "11.0.171",
+    "@nordicsemiconductor/asset-tracker-cloud-code-style": "11.0.172",
     "@types/aws-iot-device-sdk": "2.2.4",
     "@types/node": "18.11.18",
     "@types/node-fetch": "3.0.3",
