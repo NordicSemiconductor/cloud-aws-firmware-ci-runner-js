@@ -33,7 +33,7 @@
     "@aws-sdk/client-sts": "3.279.0",
     "@aws-sdk/s3-presigned-post": "3.279.0",
     "@nordicsemiconductor/cloudformation-helpers": "7.0.7",
-    "@nordicsemiconductor/firmware-ci-device-helpers": "13.3.57",
+    "@nordicsemiconductor/firmware-ci-device-helpers": "13.3.58",
     "@serialport/parser-readline": "10.5.0",
     "aws-iot-device-sdk": "2.2.12",
     "commander": "10.0.0",
