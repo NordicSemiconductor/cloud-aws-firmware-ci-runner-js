@@ -28,7 +28,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudformation": "3.310.0",
     "@aws-sdk/client-iot": "3.310.0",
-    "@aws-sdk/client-iot-data-plane": "3.310.0",
+    "@aws-sdk/client-iot-data-plane": "3.311.0",
     "@aws-sdk/client-s3": "3.310.0",
     "@aws-sdk/client-sts": "3.310.0",
     "@aws-sdk/s3-presigned-post": "3.310.0",
