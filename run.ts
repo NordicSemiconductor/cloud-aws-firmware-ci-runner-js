@@ -9,11 +9,11 @@ import {
 } from '@aws-sdk/client-s3'
 import { stackOutput } from '@nordicsemiconductor/cloudformation-helpers'
 import {
+	Connection,
 	allSeenNoOrder,
 	anySeen,
 	atHostHexfile,
 	connect,
-	Connection,
 	flash,
 	log,
 	runCmd,
